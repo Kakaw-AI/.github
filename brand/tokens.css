@@ -1,0 +1,64 @@
+/* Kakaw brand tokens. Light is home; dark is the inverse.
+   Use tokens by name. Never type a hex where a token exists. */
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap");
+
+:root {
+  /* raw colour */
+  --kk-cream: #f6eee2;      /* page ground */
+  --kk-raised: #fff9f0;     /* cards, inputs */
+  --kk-line: #e3d5c2;       /* borders, rules */
+  --kk-cocoa: #2a1810;      /* ink: text, primary buttons */
+  --kk-muted: #75604f;      /* secondary text, 5.3:1 on cream */
+  --kk-pod: #e8a317;        /* the one accent: graphics, highlight, marks. Never small text */
+  --kk-pod-text: #8a5a00;   /* pod as text on light, 5.2:1 */
+  --kk-leaf: #2f6b4f;       /* success */
+  --kk-teal: #2b6a78;       /* info */
+  --kk-clay: #a4452c;       /* chart only */
+  --kk-error: #b3261e;      /* errors and destructive. Always with a text label */
+
+  /* semantic aliases (switch with the theme) */
+  --kk-bg: var(--kk-cream);
+  --kk-bg-raised: var(--kk-raised);
+  --kk-border: var(--kk-line);
+  --kk-text: var(--kk-cocoa);
+  --kk-text-muted: var(--kk-muted);
+  --kk-accent: var(--kk-pod);
+
+  /* chart series, in order */
+  --kk-chart-1: #2a1810;
+  --kk-chart-2: #e8a317;
+  --kk-chart-3: #2f6b4f;
+  --kk-chart-4: #2b6a78;
+  --kk-chart-5: #a4452c;
+
+  /* fonts */
+  --kk-font-display: "Bricolage Grotesque", system-ui, sans-serif;
+  --kk-font-body: "Figtree", system-ui, sans-serif;
+  --kk-font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* radius */
+  --kk-radius-input: 10px;
+  --kk-radius-button: 10px;
+  --kk-radius-card: 16px;
+  --kk-radius-pill: 999px; /* status badges only */
+
+  /* highlight: one key word per heading, pod gold behind cocoa */
+  --kk-highlight-bg: #e8a317;
+  --kk-highlight-text: #2a1810;
+}
+
+:root[data-theme="dark"],
+.theme-dark {
+  --kk-bg: #1c100a;
+  --kk-bg-raised: #281910;
+  --kk-border: #44301f;
+  --kk-text: #f6eee2;
+  --kk-text-muted: #b9a28c;
+  --kk-accent: #f0b030;
+  --kk-leaf: #6fcf9a;
+  --kk-teal: #7cc4d2;
+  --kk-error: #ff6b5e;
+  --kk-chart-1: #f6eee2;
+  --kk-highlight-bg: #f0b030;
+  --kk-highlight-text: #2a1810;
+}
