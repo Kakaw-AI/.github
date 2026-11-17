@@ -5,7 +5,7 @@
 
 Ask your database a question in plain English and get the answer as a table or a chart. Kakaw AI is for people who need the numbers but do not write SQL. You bring your own LLM provider.
 
-[Website](https://kakaw.gitnasr.com) · [Docs](https://kakaw.gitnasr.com/docs) · [Getting started](https://kakaw.gitnasr.com/docs/getting-started)
+[Website](https://kakaw.gitnasr.com) · [Docs](https://kakaw.gitnasr.com/docs) · [Getting started](https://kakaw.gitnasr.com/docs/getting-started) · [Architecture](https://github.com/Kakaw-AI/.github/tree/main/docs)
 
 ## How it works
 
