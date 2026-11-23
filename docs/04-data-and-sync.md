@@ -74,7 +74,7 @@ Every record chains back to a `User` with `onDelete: Cascade`, so deleting an ac
 | --- | --- | --- |
 | Identity | `users`, `sessions`, `accounts`, `verifications` | Better Auth |
 | Connections | `database_sources`, `llm_connections` | What the user connected. Secrets are stored encrypted |
-| Catalog | `database_source_tables`, `_columns`, `_indexes`, `_relations`, `_knowledge_documents` | The cached schema the agent prompts with. Columns keep a few sample values |
+| Catalog | `database_source_tables`, `_columns`, `_indexes`, `_relations`, `_knowledge_documents` | The cached schema the agent prompts with. Columns keep a few sample values; short text columns (up to 50 distinct values, tables up to 200k rows, not secret-named) keep all of them in the same `sampleValues` field, and the prompt renders those as `values:` |
 | Chat | `conversations`, `messages`, `message_artifacts` | The transcript. SQL, table and chart results are artifacts of an assistant message |
 | Telemetry | `agent_run_traces` | One row per run: steps, tool calls, repair history, chart spec, cache info, thumbs feedback |
 | Learning | `query_memory_entries` | Questions this source has answered correctly, with the SQL that ran |
@@ -111,7 +111,7 @@ sequenceDiagram
     FE->>FE: sync page polls onboarding state
 
     BE->>AG: POST /api/chat/sync (60 s limit)
-    AG->>UDB: introspect tables, columns, keys, indexes, row counts,<br/>3 sample rows
+    AG->>UDB: introspect tables, columns, keys, indexes, row counts,<br/>3 sample rows, distinct values of short text columns
     AG->>AG: build knowledge documents, hash schema fingerprint
     AG-->>BE: catalog + fingerprint + sync metadata
     BE->>DB: replace catalog, status READY
