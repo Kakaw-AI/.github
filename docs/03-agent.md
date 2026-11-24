@@ -27,6 +27,7 @@ flowchart TD
     execute -->|DB error, near match| execute
     execute -->|DB error| generate
     execute -->|bad chart shape| generate
+    execute -->|joined rows repeat| generate
     execute -->|no rows| checkValues
     execute -->|rows, first draft| verify
     execute -->|rows, already checked| accept
@@ -61,7 +62,7 @@ The three nodes after `accept` run in parallel. `finalize` waits for all of them
 | `route` | `route.ts` | Decides if the turn is small talk, a chart request on the previous result, or a data question. With history, rewrites a follow-up such as "what about 2025?" into a standalone question. | Only when there is an earlier assistant turn |
 | `cache` | `plan.ts` | Looks for SQL already known for this question: the in-process plan cache, then the backend's exact query memory. | No |
 | `generate` | `plan.ts` | Writes the SQL, or asks one clarifying question (with up to four clickable options) when the request has several readings. | Yes |
-| `execute` | `execute.ts` | Checks chart plausibility, runs the SQL read-only, normalises database errors, applies free identifier fixes. | No |
+| `execute` | `execute.ts` | Checks chart plausibility, runs the SQL read-only, normalises database errors, applies free identifier fixes. A joined result that repeats itself (exact copies, or two or more columns holding one value on every row) gets one rewrite. Then `cleanRepeatedRows` cleans whatever comes back, in code: exact copies are dropped and columns with one value on every row keep it on the first row only. | No |
 | `checkValues` | `values.ts` | On an empty result, looks up the real values in the filtered columns. A case-only difference is fixed in place; anything else goes back to `generate` with the real values. | No |
 | `verify` | `verify.ts` | Reviews the result against the question once. | Yes |
 | `accept` | `finish.ts` | Sends `sql_generated` and `sql_result` to the client immediately. Records the accepted query as `sql_execution`. | No |
@@ -98,6 +99,7 @@ stateDiagram-v2
 | Free identifier fixes per run | 2 | `MAX_FREE_REPAIRS` in `execute.ts` |
 | Filters probed on an empty result | 3, showing up to 30 stored values each | `values.ts` |
 | Review rewrites | 1 (the rewrite is not reviewed again) | `verify.ts` |
+| Rewrites for repeated rows | 1, then a clean-up in code | `repeatedRows`, `cleanRepeatedRows` in `execute.ts` |
 | Graph recursion limit | 60 | `graph.ts` |
 
 A review that fails (the model errors) lets the result through rather than failing the turn. `VERIFY_RESULTS=false` turns the review off.
