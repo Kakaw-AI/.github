@@ -28,7 +28,7 @@ The agent dials hostnames that users type. Without a guard, that would be a tunn
 
 | Risk | Defence | Where |
 | --- | --- | --- |
-| Generated SQL writes or alters data | First filter: single statement, read-only prefix, write keywords rejected. Real boundary: read-only transaction (Postgres), read-only file in a killable child process (SQLite), or an aggregation pipeline checked for `$out`, `$merge`, `$where`, `$function` and `$accumulator`, run with `aggregate` only (MongoDB, which has no read-only transaction; users are told to connect with the `read` role) | `agent/src/database/safety.ts`, `query.ts` |
+| Generated SQL writes or alters data | First filter (SQL sources): single statement, read-only prefix, write keywords rejected. Real boundary: read-only transaction (Postgres), read-only file in a killable child process (SQLite), or an aggregation pipeline checked for `$out`, `$merge`, `$where`, `$function` and `$accumulator`, run with `aggregate` only (MongoDB, which has no read-only transaction; users are told to connect with the `read` role) | `agent/src/database/safety.ts`, `query.ts` |
 | Runaway query | `statement_timeout` of 30 s; SQLite child killed on timeout; MongoDB `maxTimeMS` of 30 s and a `$limit` of 200; at most 200 rows leave the database via a cursor | `agent/src/database/query.ts` |
 | Server-side request forgery through a user database or LLM URL | Blocks loopback, private, link-local, carrier-grade NAT, multicast and metadata ranges. Checked before the run starts in `server.ts`, and again at socket level (`guardedSocket`) so a DNS rebind cannot slip past. Production only; `ALLOW_PRIVATE_HOSTS=true` opts out for self-hosting | `agent/src/net/public-host.ts`, `backend/src/common/net` |
 | Redirect walks past the URL check | OpenAI-compatible client uses `redirect: "error"` | `agent/src/llm/langchain.ts` |
@@ -105,7 +105,7 @@ Secrets come from Infisical at boot (`INFISICAL_CLIENT_ID`, `INFISICAL_CLIENT_SE
 | `EMBEDDING_ENABLED`, `EMBEDDING_MODEL_ID`, `QUERY_MEMORY_FLOOR` | backend | Query memory tuning | on, MiniLM, 0.6 |
 | `ALLOW_PRIVATE_HOSTS` | backend, agent | Allow private addresses in production | off |
 | `NEXT_PUBLIC_API_URL` | frontend | Backend origin | production backend |
-| `LLM_TIMEOUT_MS` | agent | Hosted LLM call timeout | 90 000 |
+| `LLM_TIMEOUT_MS` | agent | Hosted LLM call timeout | 180 000 |
 | `LOCAL_LLM_TIMEOUT_MS` | agent | Ollama and LM Studio call timeout | 600 000 |
 | `QUERY_TIMEOUT_MS` | agent | One user SQL query | 30 000 |
 | `VERIFY_RESULTS` | agent | Turn the result review on or off | true |
@@ -119,7 +119,7 @@ Several timers have to agree, or a slow local model dies at the shortest one.
 
 | Layer | Limit | Where |
 | --- | --- | --- |
-| One hosted LLM call | 90 s | `LLM_TIMEOUT_MS` (agent) |
+| One hosted LLM call | 180 s | `LLM_TIMEOUT_MS` (agent) |
 | One local LLM call | 10 min | `LOCAL_LLM_TIMEOUT_MS` (agent) |
 | One whole agent stream | 30 min | `agent-gateway.service.ts` (backend) |
 | Message still `STREAMING` is marked failed | 35 min | `stale-state.sweeper.ts` (backend) |

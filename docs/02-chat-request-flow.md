@@ -82,7 +82,7 @@ The run is not tied to the request that started it. `ChatController` drains the 
 | `message_failed` | agent or backend | Error with code and retryable flag | Error state, retry button |
 | `trace_persisted` | backend only | Trace id | Stored on the message as `traceId`, the handle a rating would use (no rating control in the UI yet) |
 
-The wire format is one JSON object per line (`application/x-ndjson`). The backend excludes this route from gzip, since compression buffers and would hold back tokens.
+The wire format is one JSON object per line (`application/x-ndjson`). The backend excludes this route from gzip, since compression buffers and would hold back tokens. While a reply runs it also writes a blank line every 20 s (`KEEP_ALIVE_MS` in `chat.controller.ts`), which readers skip, so a long model call does not hit Cloudflare's 100 s idle limit.
 
 ## Failure and cancellation
 
