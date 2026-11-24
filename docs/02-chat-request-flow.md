@@ -51,6 +51,7 @@ sequenceDiagram
 - Appends an optimistic user message, then calls `streamConversationMessage`, passing the Think toggle as `thinking`.
 - Reads the response body as NDJSON and feeds each event to `applyStreamEvent`, which writes into the TanStack Query cache.
 - When the stream ends it invalidates the conversation and list queries so the persisted version replaces the optimistic one.
+- If the stream breaks mid-reply (tab in the background, phone locked, network drop) it does not mark the reply failed. It waits until the page is visible, calls `followConversationMessage` (`GET /api/chat/conversations/:id/messages/:messageId/stream`), resets the bubble and rebuilds it from the replayed events. The same happens when a chat opens with a reply still `STREAMING` (reload, another tab). A 204 means the server is no longer writing it; the refetch then shows the stored result.
 - A first message from `/chat` creates the conversation first, navigates to `/chat/:id`, then streams.
 
 **Backend** (`chat.service.ts`)
@@ -59,7 +60,9 @@ sequenceDiagram
 3. Creates the message pair, then in parallel fetches the last 24 history messages, an exact query-memory hit and similar past questions.
 4. Streams from the agent through `AgentGatewayService`, collecting artifacts and trace data as events pass.
 5. On completion it persists the message, artifacts and an `AgentRunTrace`, records query memory from the trace, and sends a final `trace_persisted` event carrying the trace id, the handle for rating the message.
-6. On failure or client disconnect it marks the message `FAILED`. A sweeper catches rows left `STREAMING` by a crashed process.
+6. On failure it marks the message `FAILED`. A sweeper catches rows left `STREAMING` by a crashed process.
+
+The run is not tied to the request that started it. `ChatController` drains the generator in the background and keeps every event of the running reply in `EphemeralStateService` (in memory, per process). The first request and any later `GET .../messages/:messageId/stream` are readers: each gets the events so far, then the live ones. A browser that goes away no longer stops or fails the reply. With more than one backend replica a re-attach can reach the wrong process; it gets 204 and the frontend falls back to polling the stored message.
 
 **Agent**: see [03 The agent](03-agent.md).
 
