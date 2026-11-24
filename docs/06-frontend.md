@@ -14,8 +14,10 @@ Next.js 16 (App Router), React 19, Tailwind CSS 4, better-auth client, TanStack 
 | `/chat`, `/chat/[conversationId]` | The chat | Signed in and has a database |
 | `/dashboard` | Renders the chat page (not indexed) | Signed in and has a database |
 | `/docs`, `/docs/[slug]` | User guides written in MDX (`src/content/docs`) | Public |
+| `/postgresql`, `/sqlite`, `/local-models` | One page per database or way of running the model, for search | Public |
+| `/examples` | Real questions with Kakaw's answers, tables, charts and SQL | Public |
 | `/privacy`, `/terms` | Legal | Public |
-| `/llms.txt`, `sitemap`, `robots`, Open Graph image | Discovery | Public |
+| `/llms.txt`, `sitemap`, `robots`, Open Graph image | Discovery. Public pages set their tags through `pageMetadata()` in `src/lib/seo.ts`; hosts other than kakaw.nasr.work get `X-Robots-Tag: noindex` | Public |
 
 ## The route guard
 
