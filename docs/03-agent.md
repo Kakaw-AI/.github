@@ -36,6 +36,7 @@ flowchart TD
     checkValues{{checkValues}}
     checkValues -->|case-only difference,<br/>fixed in place| execute
     checkValues -->|real values found| generate
+    checkValues -->|values exist,<br/>joined query| generate
     checkValues -->|nothing to fix| accept
 
     verify{{verify}}
@@ -63,7 +64,7 @@ The three nodes after `accept` run in parallel. `finalize` waits for all of them
 | `cache` | `plan.ts` | Looks for SQL already known for this question: the in-process plan cache, then the backend's exact query memory. | No |
 | `generate` | `plan.ts` | Writes the SQL, or asks one clarifying question (with up to four clickable options) when the request has several readings. | Yes |
 | `execute` | `execute.ts` | Checks chart plausibility, runs the SQL read-only, normalises database errors, applies free identifier fixes. A joined result that repeats itself (exact copies, or two or more columns holding one value on every row) gets one rewrite. Then `cleanRepeatedRows` cleans whatever comes back, in code: exact copies are dropped and columns with one value on every row keep it on the first row only. | No |
-| `checkValues` | `values.ts` | On an empty result, looks up the real values in the filtered columns. A case-only difference is fixed in place; anything else goes back to `generate` with the real values. | No |
+| `checkValues` | `values.ts` | On an empty result, looks each filtered value up directly (ignoring case, up to 5 matches), then in a sample of up to 100 stored values. A case-only difference is fixed in place. A value that is missing goes back to `generate` with the stored values. When every value exists and the query has a join, it goes back once with a note that the join is the likely cause. | No |
 | `verify` | `verify.ts` | Reviews the result against the question once. | Yes |
 | `accept` | `finish.ts` | Sends `sql_generated` and `sql_result` to the client immediately. Records the accepted query as `sql_execution`. | No |
 | `writeAnswer` | `finish.ts` | Streams the written answer. | Yes |
@@ -98,6 +99,7 @@ stateDiagram-v2
 | SQL drafts per run | 4 (the first plus three repairs) | `MAX_GENERATIONS` in `plan.ts` |
 | Free identifier fixes per run | 2 | `MAX_FREE_REPAIRS` in `execute.ts` |
 | Filters probed on an empty result | 3, showing up to 30 stored values each | `values.ts` |
+| Join rewrites when the filtered values exist | 1 | `checkValues` in `values.ts` |
 | Review rewrites | 1 (the rewrite is not reviewed again) | `verify.ts` |
 | Rewrites for repeated rows | 1, then a clean-up in code | `repeatedRows`, `cleanRepeatedRows` in `execute.ts` |
 | Graph recursion limit | 60 | `graph.ts` |
@@ -162,6 +164,8 @@ Requested chart fields (for example "orders by country as a stacked bar") are re
 
 The timeout aborts the HTTP request rather than racing it, so a slow provider stops costing tokens when the agent gives up. The run's own signal (client gone, shutdown) aborts the same way.
 
+When a rewrite (a `generate` call with feedback) times out or fails, and the query it was fixing ran, the run answers from that query's result instead of failing. Query memory does not learn that query, since its rewrite was still pending.
+
 **Thinking.** Reasoning models spend most of their latency on hidden thinking. Two things reduce it:
 
 - Calls that do not need deep reasoning are marked `light`: `route`, `verify`, `writeAnswer`, `planChart`, `suggestFollowUps`. SQL generation is not light.
@@ -185,7 +189,7 @@ Two layers, and only the second is a boundary.
 2. Enforcement in `database/query.ts`:
    - **Postgres**: `BEGIN TRANSACTION READ ONLY`, `SET LOCAL statement_timeout`, a `DECLARE ... NO SCROLL CURSOR`, so at most 200 rows leave the database. Pools are cached per connection string (32 max, LRU, 5 connections each).
    - **SQLite**: the file is opened read-only inside a separate child process that is killed on timeout. A synchronous `better-sqlite3` call cannot be interrupted, and on the main thread it would stall every other request.
-   - **MongoDB** (`database/mongo.ts`): the model still writes SQL, in the subset NoQL (`@synatic/noql`, GPL-3.0) parses, and NoQL translates it to an aggregation pipeline. The pipeline is rejected if it contains `$out`, `$merge`, `$where`, `$function` or `$accumulator`, and only `aggregate` is called, with `maxTimeMS` and a `$limit` of 200. A query naming a missing collection fails as `relation "x" does not exist`, so the usual unknown-table repair applies. The connection string must name a database and may carry only an allow-list of options: AWS and OIDC sign-in, `tls*File` paths and proxies are refused. Host names, SRV targets included, resolve through the private-network guard (`lookup: publicLookup`). Sockets skip `lookup` for IP literals, so seed hosts given as IPs are checked before connecting and unix-socket hosts are refused. A replica-set member the server announces at a private IP drops the client and fails its queries; the driver's first heartbeat to that member can still go out before the event fires. Result documents stay nested, so secret-looking fields are redacted at every depth. A time-limit error (code 50) reads like the other dialects' timeout. Clients are cached like the Postgres pools.
+   - **MongoDB** (`database/mongo.ts`): the model still writes SQL, in the subset NoQL (`@synatic/noql`, GPL-3.0) parses, and NoQL translates it to an aggregation pipeline. The pipeline is rejected if it contains `$out`, `$merge`, `$where`, `$function` or `$accumulator`, and only `aggregate` is called, with `maxTimeMS` and a `$limit` of 200. A query naming a missing collection fails as `relation "x" does not exist`, so the usual unknown-table repair applies. NoQL's `LIKE` ignores case and it mistranslates `LOWER(x) LIKE` into a match on a field named `undefined`, so `translateSql` drops a `LOWER`/`UPPER` wrapped around a `LIKE` operand, and refuses any pipeline that still names `undefined`. The connection string must name a database and may carry only an allow-list of options, pool and timeout options included (the client's own settings override them): AWS and OIDC sign-in, `tls*File` paths and proxies are refused. Host names, SRV targets included, resolve through the private-network guard (`lookup: publicLookup`). Sockets skip `lookup` for IP literals, so seed hosts given as IPs are checked before connecting and unix-socket hosts are refused. A replica-set member the server announces at a private IP drops the client and fails its queries; the driver's first heartbeat to that member can still go out before the event fires. Result documents stay nested, so secret-looking fields are redacted at every depth. A time-limit error (code 50) reads like the other dialects' timeout. Clients are cached like the Postgres pools.
 
 MongoDB introspection samples 100 documents per collection with `$sample`. Nested sub-documents become dot-path columns (`address.city`), arrays stay one column, the most common BSON type wins, a field missing from any sample is nullable, and a collection keeps its 100 most common fields.
 
