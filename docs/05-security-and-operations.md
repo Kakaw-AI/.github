@@ -28,8 +28,8 @@ The agent dials hostnames that users type. Without a guard, that would be a tunn
 
 | Risk | Defence | Where |
 | --- | --- | --- |
-| Generated SQL writes or alters data | First filter: single statement, read-only prefix, write keywords rejected. Real boundary: read-only transaction (Postgres) or read-only file in a killable child process (SQLite) | `agent/src/database/safety.ts`, `query.ts` |
-| Runaway query | `statement_timeout` of 30 s; SQLite child killed on timeout; at most 200 rows leave the database via a cursor | `agent/src/database/query.ts` |
+| Generated SQL writes or alters data | First filter: single statement, read-only prefix, write keywords rejected. Real boundary: read-only transaction (Postgres), read-only file in a killable child process (SQLite), or an aggregation pipeline checked for `$out`, `$merge`, `$where`, `$function` and `$accumulator`, run with `aggregate` only (MongoDB, which has no read-only transaction; users are told to connect with the `read` role) | `agent/src/database/safety.ts`, `query.ts` |
+| Runaway query | `statement_timeout` of 30 s; SQLite child killed on timeout; MongoDB `maxTimeMS` of 30 s and a `$limit` of 200; at most 200 rows leave the database via a cursor | `agent/src/database/query.ts` |
 | Server-side request forgery through a user database or LLM URL | Blocks loopback, private, link-local, carrier-grade NAT, multicast and metadata ranges. Checked before the run starts in `server.ts`, and again at socket level (`guardedSocket`) so a DNS rebind cannot slip past. Production only; `ALLOW_PRIVATE_HOSTS=true` opts out for self-hosting | `agent/src/net/public-host.ts`, `backend/src/common/net` |
 | Redirect walks past the URL check | OpenAI-compatible client uses `redirect: "error"` | `agent/src/llm/langchain.ts` |
 | Forged calls to the agent | HMAC-SHA256 over timestamp and body, constant-time compare, 5 minute window | `agent/src/auth.ts` |

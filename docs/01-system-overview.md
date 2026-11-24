@@ -121,7 +121,7 @@ Every route needs a session unless marked `@Public()` (only `GET /api/health`). 
 
 | | Supported |
 | --- | --- |
-| User databases | PostgreSQL (connection string), SQLite (`.db`, `.sqlite`, `.sqlite3` upload) |
+| User databases | PostgreSQL and MongoDB (connection string), SQLite (`.db`, `.sqlite`, `.sqlite3` upload) |
 | LLM providers | OpenAI, Anthropic, Google, OpenRouter, Ollama, LM Studio |
 | Sign-in | Google, GitHub |
 

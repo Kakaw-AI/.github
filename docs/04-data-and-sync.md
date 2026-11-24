@@ -30,7 +30,7 @@ erDiagram
     Conversation ||--o{ AgentRunTrace : traced
 
     DatabaseSource {
-        string provider "postgresql or sqlite"
+        string provider "postgresql, mongodb or sqlite"
         enum status "PENDING SYNCING READY FAILED"
         string connectionString "encrypted"
         string sqliteObjectKey "R2 key"
@@ -94,10 +94,10 @@ sequenceDiagram
     participant UDB as User DB
     participant DB as App DB
 
-    alt PostgreSQL
+    alt PostgreSQL or MongoDB
         U->>FE: connection string
         FE->>BE: POST /api/database-sources
-        BE->>BE: validate host is public (production)
+        BE->>BE: check the format (scheme, MongoDB database name)
     else SQLite file
         U->>FE: choose .db file
         FE->>BE: POST /api/database-sources/uploads/presign
