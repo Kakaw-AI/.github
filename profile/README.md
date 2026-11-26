@@ -9,7 +9,7 @@ Ask your database a question in plain English and get the answer as a table or a
 
 ## How it works
 
-You connect a database (PostgreSQL, MySQL, Snowflake or SQLite) and an LLM provider (Anthropic, OpenAI, Google Gemini, Ollama or LM Studio). You ask a question. Kakaw writes the SQL, shows it to you, runs it read-only, and returns a table or a chart.
+You connect a database (PostgreSQL, MongoDB or SQLite) and an LLM provider (Anthropic, OpenAI, Google Gemini, Ollama or LM Studio). You ask a question. Kakaw writes the query (SQL, or a MongoDB aggregation pipeline), shows it to you, runs it read-only, and returns a table or a chart.
 
 ## Repositories
 
@@ -17,7 +17,7 @@ You connect a database (PostgreSQL, MySQL, Snowflake or SQLite) and an LLM provi
 | --- | --- | --- |
 | [frontend](https://github.com/Kakaw-AI/frontend) | The web app: onboarding, chat, docs | Next.js 16, React 19, Tailwind CSS 4 |
 | [backend](https://github.com/Kakaw-AI/backend) | API: auth, chat, database connections, streaming | NestJS, Prisma, PostgreSQL |
-| [agent](https://github.com/Kakaw-AI/agent) | Turns a question into SQL and an answer | TypeScript, LangGraph |
+| [agent](https://github.com/Kakaw-AI/agent) | Turns a question into a query and an answer | TypeScript, LangGraph |
 | [monitoring](https://github.com/Kakaw-AI/monitoring) | Ships container logs to Grafana Cloud | Grafana Alloy |
 | [deprecaed](https://github.com/Kakaw-AI/deprecaed) | Pre-split code, kept for reference | |
 

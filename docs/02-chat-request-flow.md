@@ -71,7 +71,7 @@ The run is not tied to the request that started it. `ChatController` drains the 
 | Event | From | Meaning | UI effect |
 | --- | --- | --- | --- |
 | `message_started` | agent | Run accepted | Show the assistant bubble |
-| `agent_step` | agent | A progress line, such as "Executing SQL..." | Step log |
+| `agent_step` | agent | A progress line, such as "Running the query..." | Step log |
 | `sql_generated` | agent | The accepted SQL | SQL artifact |
 | `sql_result` | agent | Columns, rows, row count | Table artifact |
 | `message_delta` | agent | A chunk of the written answer | Text streams in |

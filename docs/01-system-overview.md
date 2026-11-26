@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | **Frontend** | The web app: login, onboarding, chat, docs, landing page | Backend (browser and server side) |
 | **Backend** | The API and the only service with a user-facing session. Owns users, conversations, saved connections, query memory | App database, agent, object storage, Infisical |
-| **Agent** | Turns a question into SQL, runs it, writes the answer, plans a chart. Stateless apart from in-process caches | The user's database, the user's LLM, Infisical |
+| **Agent** | Turns a question into a query, runs it, writes the answer, plans a chart. Stateless apart from in-process caches | The user's database, the user's LLM, Infisical |
 | **Monitoring** | Alloy collector that ships container logs to Grafana Cloud Loki | Docker socket, Grafana Cloud |
 
 The backend is the gatekeeper. The browser never calls the agent, and the agent never reads the app database. Everything the agent needs for one turn arrives in a single signed request.

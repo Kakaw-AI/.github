@@ -1,6 +1,6 @@
 # Kakaw AI: how it works
 
-Kakaw AI lets a person ask a database a question in plain English. It writes the SQL, runs it read-only, and returns a table, a chart and a written answer. The user brings their own LLM provider.
+Kakaw AI lets a person ask a database a question in plain English. It writes the query (SQL, or a MongoDB aggregation pipeline), runs it read-only, and returns a table, a chart and a written answer. The user brings their own LLM provider.
 
 These docs describe the code as it is today, across the three services.
 
@@ -20,7 +20,7 @@ flowchart LR
     U([User]) -->|asks a question| FE[Frontend<br/>Next.js]
     FE -->|HTTPS + session cookie| BE[Backend<br/>NestJS]
     BE -->|signed request, NDJSON stream| AG[Agent<br/>LangGraph]
-    AG -->|read-only SQL| UDB[(User's database<br/>Postgres or SQLite)]
+    AG -->|read-only query| UDB[(User's database<br/>Postgres, MongoDB or SQLite)]
     AG -->|prompts| LLM[[User's LLM<br/>Anthropic, OpenAI, Google,<br/>OpenRouter, Ollama, LM Studio]]
     BE --- APPDB[(App database<br/>Postgres)]
 ```

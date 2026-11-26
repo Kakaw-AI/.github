@@ -37,6 +37,7 @@ The agent dials hostnames that users type. Without a guard, that would be a tunn
 | Secrets in results | Fields named like `password`, `secret`, `token`, `key`, `credential`, `auth`, `session` come back as `[redacted]` | `agent/src/database/sanitize.ts` |
 | Secrets in logs | pino redacts `cookie`, `authorization` and the signature header | `backend/src/app.module.ts` |
 | Abuse and cost | Per-user request budget; tighter limits on chat runs (20 per minute), syncs and connection tests. In memory, correct for one replica | `backend/src/common/guards/rate-limit.guard.ts` |
+| Customer data in logs | Not redacted: in production each `llm_call` and `llm_response` log carries up to 2,000 characters of each prompt and reply, which can include questions, schema and result values. The privacy page says so | `agent/src/agent/logger.ts` |
 | Cross-tenant data | Query memory, traces and catalogs hang off a `DatabaseSource` that belongs to one user; every lookup is scoped by user | Prisma schema |
 | Oversized agent request | Body buffered with a 64 MB cap before the signature check | `agent/src/server.ts` |
 | Data deletion | `DELETE /api/database-sources/:id` and `DELETE /api/me` remove records and uploaded files; cascades handle the rest | backend |
