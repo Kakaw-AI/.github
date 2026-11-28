@@ -171,6 +171,16 @@ flowchart TD
 - Statuses: `ACTIVE`, `QUARANTINED`, `RETIRED`. A resync retires an entry whose SQL uses a table or column the new schema lacks.
 - `npm run backfill:query-memory` rebuilds entries from existing traces.
 
+## Knowledge book ("Improve accuracy")
+
+The sync records structure; the book records meaning. A user starts it per database from **Improve accuracy** with one of their LLM connections.
+
+- **Backend is the dispatcher** (`backend/src/book/book.service.ts`). It upserts one `database_books` row, orders the catalog tables by declared-FK degree then row count, and loops over them in process with concurrency 2, calling the agent's `POST /api/improve/table` once per table (retried up to 4 times with a growing pause, for provider rate limits). Each page is stored in `book_pages` with a hash of the table's columns and keys, so the next run only rereads changed tables; a `HUMAN` page is never overwritten. Then `POST /api/improve/overview` writes the overview. The run stops starting tables at 1,000,000 tokens (`PARTIAL`), on Stop (`cancelRequested`, `CANCELLED`) or after 3 consecutive failures (`FAILED`). A run that rereads every table counts against 3 per database per UTC day. On boot, `RUNNING` books become `PARTIAL`. Tokens go to `token_usage_entries` with `kind = 'improver'`.
+- **Agent reads one table** (`agent/src/improver/`): a random sample of up to 200 rows (`TABLESAMPLE` over 50k rows), statistics over it, Postgres column comments and every row of small reference tables, then one structured model call. Each proposed join is checked by query and kept at 80% or more of sampled values found in the target.
+- **Use at question time**: `getRuntimeKnowledge` attaches `knowledge.book` (read on every call, not cached with the catalog). The agent's `withBook` folds it into the catalog once per run: a note per table and column, and confirmed joins as relationships marked as not declared. The SQL and review prompts render those notes, so with no book the prompt is unchanged.
+- **Debug view**: the GET response includes the pages only for emails in `BOOK_PAGES_VISIBLE_TO` (`*` for everyone).
+- **Measured** on the messy ERP eval (`agent/eval/messy`, 26 questions, DeepSeek v4.1 Flash): 22/26 without the book, 26/26 with it, at about 13.7k instead of 4.2k input tokens per question. Building the book took about 104k tokens for 22 tables.
+
 ## Secrets at rest
 
 | Value | Protection |
