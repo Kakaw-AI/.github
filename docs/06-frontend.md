@@ -111,10 +111,6 @@ On `/chat` there is no conversation yet. The user picks a database and an LLM co
 
 `D3ChartArtifact` renders the chart spec the agent sends: `bar`, `line`, `pie`, `scatter` and `histogram`, with optional series and stacked bars. The agent's spec type also names a `network` kind, but the browser has no renderer for it yet. The spec carries the data rows, so a chart renders without another query. "Chart that" on the previous result reuses the rows already in the conversation.
 
-## Message feedback (not wired up yet)
-
-The backend can take a rating: `PATCH /api/chat/conversations/:conversationId/traces/:traceId/feedback` with `positive` or `negative`, and a negative one retires the query-memory entry that run created (see [04](04-data-and-sync.md#query-memory-learning-from-answers)). The frontend already keeps each message's `traceId` from the `trace_persisted` event, but it has no thumbs up or down control and no call to that endpoint. Adding the control is the only missing piece.
-
 ## Tests
 
 `frontend/test` uses Vitest. `npm run lint` and `npm run build` run in CI.

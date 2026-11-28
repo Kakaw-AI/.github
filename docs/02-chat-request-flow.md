@@ -41,7 +41,7 @@ sequenceDiagram
     end
     AG-->>BE: chart_generated, suggestions_generated,<br/>agent_trace, message_completed
     BE->>DB: complete message, save artifacts,<br/>save AgentRunTrace, record query memory
-    BE-->>FE: ... message_completed, trace_persisted
+    BE-->>FE: ... message_completed
     FE->>BE: refetch conversation (final persisted state)
 ```
 
@@ -59,7 +59,7 @@ sequenceDiagram
 2. `RuntimeConfigService.resolve` builds the runtime: decrypted API key, base URL, the database source (with a presigned download for SQLite) and the cached schema catalog.
 3. Creates the message pair, then in parallel fetches the last 24 history messages, an exact query-memory hit and similar past questions.
 4. Streams from the agent through `AgentGatewayService`, collecting artifacts and trace data as events pass.
-5. On completion it persists the message, artifacts and an `AgentRunTrace`, records query memory from the trace, and sends a final `trace_persisted` event carrying the trace id, the handle for rating the message.
+5. On completion it persists the message, artifacts and an `AgentRunTrace`, and records query memory from the trace.
 6. On failure it marks the message `FAILED`. A sweeper catches rows left `STREAMING` by a crashed process.
 
 The run is not tied to the request that started it. `ChatController` drains the generator in the background and keeps every event of the running reply in `EphemeralStateService` (in memory, per process). The first request and any later `GET .../messages/:messageId/stream` are readers: each gets the events so far, then the live ones. A browser that goes away no longer stops or fails the reply. With more than one backend replica a re-attach can reach the wrong process; it gets 204 and the frontend falls back to polling the stored message.
@@ -80,7 +80,6 @@ The run is not tied to the request that started it. `ChatController` drains the 
 | `agent_trace` | agent | Steps, tool calls, repair history, cache info | Stored, not shown live |
 | `message_completed` | agent | Final text and token usage | Bubble finalised |
 | `message_failed` | agent or backend | Error with code and retryable flag | Error state, retry button |
-| `trace_persisted` | backend only | Trace id | Stored on the message as `traceId`, the handle a rating would use (no rating control in the UI yet) |
 
 The wire format is one JSON object per line (`application/x-ndjson`). The backend excludes this route from gzip, since compression buffers and would hold back tokens. While a reply runs it also writes a blank line every 20 s (`KEEP_ALIVE_MS` in `chat.controller.ts`), which readers skip, so a long model call does not hit Cloudflare's 100 s idle limit.
 

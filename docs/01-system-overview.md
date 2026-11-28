@@ -114,7 +114,7 @@ Every route needs a session unless marked `@Public()` (only `GET /api/health`). 
 | Me | `GET /api/me/onboarding-state`, `/connections`, `/llm-connections`, `/chat-options`; `DELETE /api/me` |
 | Database sources | `POST /api/database-sources`, `POST uploads/presign`, `POST :id/refresh`, `DELETE :id` |
 | LLM connections | `POST /api/llm-connections`, `POST :id/activate`, `POST :id/deactivate`, `DELETE :id` |
-| Chat | `GET/POST /api/chat/conversations`, `GET/DELETE conversations/:id`, `POST conversations/:id/runtime`, `POST conversations/:id/messages/stream`, `POST .../messages/:messageId/retry`, `PATCH .../traces/:traceId/feedback` |
+| Chat | `GET/POST /api/chat/conversations`, `GET/DELETE conversations/:id`, `POST conversations/:id/runtime`, `POST conversations/:id/messages/stream`, `POST .../messages/:messageId/retry` |
 | Health | `GET /api/health` |
 
 ## Supported inputs

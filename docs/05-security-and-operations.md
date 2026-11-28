@@ -42,7 +42,7 @@ The agent dials hostnames that users type. Without a guard, that would be a tunn
 | Oversized agent request | Body buffered with a 64 MB cap before the signature check | `agent/src/server.ts` |
 | Data deletion | `DELETE /api/database-sources/:id` and `DELETE /api/me` remove records and uploaded files; cascades handle the rest | backend |
 
-Kakaw reads only the schema and a few sample rows for the catalog. Result rows are sent to the user's chosen LLM provider to write the answer, so the privacy page points users to that provider's policy.
+Kakaw reads only the schema and a few sample rows for the catalog, and stores the schema and per-column sample values, not the rows. Result rows are sent to the user's chosen LLM provider to write the answer, so the privacy page points users to that provider's policy.
 
 ## CI and images
 

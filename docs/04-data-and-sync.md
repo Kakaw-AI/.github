@@ -15,12 +15,10 @@ erDiagram
 
     DatabaseSource ||--o{ Conversation : "asked about"
     DatabaseSource ||--o{ DatabaseSourceTable : catalog
-    DatabaseSource ||--o{ DatabaseSourceKnowledgeDocument : knowledge
     DatabaseSource ||--o{ QueryMemoryEntry : remembers
     DatabaseSource ||--o{ AgentRunTrace : traced
 
     DatabaseSourceTable ||--o{ DatabaseSourceColumn : has
-    DatabaseSourceTable ||--o{ DatabaseSourceIndex : has
     DatabaseSourceTable ||--o{ DatabaseSourceRelation : "source of"
 
     LlmConnection ||--o{ Conversation : "used by"
@@ -42,21 +40,20 @@ erDiagram
         string baseUrl "local and custom endpoints"
     }
     Message {
-        enum role "USER ASSISTANT SYSTEM"
+        enum role "USER ASSISTANT"
         enum status "PENDING STREAMING COMPLETED FAILED"
         json tokenUsage
         string[] suggestions
     }
     MessageArtifact {
-        enum type "TEXT SQL TABLE CHART ERROR"
+        enum type "TEXT SQL TABLE CHART"
         json payload
     }
     AgentRunTrace {
-        string requestId "unique"
         json steps
         json toolCalls
         json repairHistory
-        string feedback "thumbs"
+        json tokenUsage
     }
     QueryMemoryEntry {
         string question
@@ -74,9 +71,9 @@ Every record chains back to a `User` with `onDelete: Cascade`, so deleting an ac
 | --- | --- | --- |
 | Identity | `users`, `sessions`, `accounts`, `verifications` | Better Auth |
 | Connections | `database_sources`, `llm_connections` | What the user connected. Secrets are stored encrypted |
-| Catalog | `database_source_tables`, `_columns`, `_indexes`, `_relations`, `_knowledge_documents` | The cached schema the agent prompts with. Columns keep a few sample values; short text columns (up to 50 distinct values, tables up to 200k rows, not secret-named) keep all of them in the same `sampleValues` field, and the prompt renders those as `values:` |
+| Catalog | `database_source_tables`, `_columns`, `_relations` | The cached schema the agent prompts with. Columns keep a few sample values; short text columns (up to 50 distinct values, tables up to 200k rows, not secret-named) keep all of them in the same `sampleValues` field, and the prompt renders those as `values:` |
 | Chat | `conversations`, `messages`, `message_artifacts` | The transcript. SQL, table and chart results are artifacts of an assistant message |
-| Telemetry | `agent_run_traces` | One row per run: steps, tool calls, repair history, chart spec, cache info, thumbs feedback |
+| Telemetry | `agent_run_traces` | One row per run: question, steps, tool calls, repair history, chart spec, token usage, cache hit, error |
 | Learning | `query_memory_entries` | Questions this source has answered correctly, with the SQL that ran |
 
 ## Connecting a database (onboarding and sync)
@@ -111,8 +108,8 @@ sequenceDiagram
     FE->>FE: sync page polls onboarding state
 
     BE->>AG: POST /api/chat/sync (60 s limit)
-    AG->>UDB: introspect tables, columns, keys, indexes, row counts,<br/>3 sample rows, distinct values of short text columns
-    AG->>AG: build knowledge documents, hash schema fingerprint
+    AG->>UDB: introspect tables, columns, keys, indexes, row counts,<br/>3 sample rows (used for sample values, not stored), distinct values of short text columns
+    AG->>AG: hash schema fingerprint
     AG-->>BE: catalog + fingerprint + sync metadata
     BE->>DB: replace catalog, status READY
     FE->>FE: sees READY, goes to /dashboard
@@ -135,7 +132,7 @@ Only a `READY` source can start a chat.
 
 ### The schema fingerprint
 
-`fingerprintCatalog` hashes only facts about the customer's schema: table and column names, types, nullability, primary keys, ordinal positions, indexes and foreign keys. Locally derived fields (such as normalised names) are left out on purpose, so changing how Kakaw normalises names never forces a re-sync of every source.
+`fingerprintCatalog` hashes only facts about the customer's schema: table and column names, types, nullability, primary keys, ordinal positions, indexes and foreign keys. Row counts and sample values are left out on purpose, so a sync of an unchanged schema keeps the same fingerprint and query memory stays valid. Indexes are read only for the fingerprint; the backend does not store them.
 
 The fingerprint is the key that makes cached SQL safe:
 
@@ -164,7 +161,6 @@ flowchart TD
       S -->|score at least 0.6, deduped by SQL,<br/>top few| EX[examples: few-shot in the prompt]
     end
 
-    FB[Negative feedback via the API<br/>no UI control yet] -->|retire the entry<br/>that run created| E
     E --> X
     E --> S
 ```
@@ -172,7 +168,7 @@ flowchart TD
 - **Embeddings run in the backend process** (`Xenova/all-MiniLM-L6-v2`, 384 dimensions, about 3 ms per question). There is no embeddings API call, no extra key, and no customer schema leaves the infrastructure. If the model cannot load, retrieval quietly returns nothing and chat keeps working.
 - **Isolation is structural**: entries belong to a `DatabaseSource`, which belongs to a user.
 - One entry per question per source (`questionHash`), so asking again and getting it right overwrites a bad entry.
-- Statuses: `ACTIVE`, `QUARANTINED`, `RETIRED`. Explicit negative feedback retires the entry a message created, through `sourceTraceId`.
+- Statuses: `ACTIVE`, `QUARANTINED`, `RETIRED`. A resync retires an entry whose SQL uses a table or column the new schema lacks.
 - `npm run backfill:query-memory` rebuilds entries from existing traces.
 
 ## Secrets at rest
